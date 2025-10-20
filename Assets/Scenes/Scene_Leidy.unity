@@ -1706,12 +1706,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 630083894}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f1be1764854d2414ca0d3c14af8ce0a3, type: 3}
+  m_Script: {fileID: 11500000, guid: 959d59b2ecdf2b24a8cbd5d111ce2ae4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  waterParticleSystem: {fileID: 1651223505}
-  pourAngleThreshold: 10
-  maxPourAngle: 160
+  waterParticleSystem: {fileID: 0}
+  pourAngleThreshold: 0
+  maxPourAngle: 0
   isPouring: 0
   localZRotation: 0
 --- !u!1001 &718188111
