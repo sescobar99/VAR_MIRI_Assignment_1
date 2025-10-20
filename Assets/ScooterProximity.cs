@@ -1,9 +1,12 @@
 using UnityEngine;
+using UnityEngine.XR.Interaction.Toolkit.Locomotion;
 
 public class ScooterProximity : MonoBehaviour
 {
     // Asigna el MeshRenderer del patinete en el Inspector
     public MeshRenderer scooterRenderer;
+
+    public LocomotionProvider enableProvider;
 
     // Se llama cuando otro collider entra en el trigger
     private void OnTriggerEnter(Collider other)
@@ -14,6 +17,7 @@ public class ScooterProximity : MonoBehaviour
         {
             // Oculta el patinete
             scooterRenderer.enabled = false;
+            enableProvider.enabled = true;
             this.gameObject.SetActive(false);
             Debug.Log("Patinete oculto.");
             //ScooterMovement.StartScooterMode();

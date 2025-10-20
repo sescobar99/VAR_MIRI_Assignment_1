@@ -69,13 +69,13 @@ public class PatineteProvider : UnityEngine.XR.Interaction.Toolkit.Locomotion.Lo
             float targetSpeed = throttle * maxSpeed;
 
             // Smoothly adjust the current speed towards the target speed
-            if (m_CurrentSpeed < targetSpeed)
+            if (Mathf.Abs(m_CurrentSpeed) < Mathf.Abs(targetSpeed))
                 m_CurrentSpeed = Mathf.MoveTowards(m_CurrentSpeed, targetSpeed, accelerationRate * Time.deltaTime);
             else
                 m_CurrentSpeed = Mathf.MoveTowards(m_CurrentSpeed, targetSpeed, decelerationRate * Time.deltaTime);
 
-            // If there's any speed, begin locomotion
-            if (m_CurrentSpeed > 0.001f)
+            // If there's any speed (forward or backward), begin locomotion
+            if (Mathf.Abs(m_CurrentSpeed) > 0.001f)
             {
                 MoveScooter();
             }
@@ -112,33 +112,26 @@ public class PatineteProvider : UnityEngine.XR.Interaction.Toolkit.Locomotion.Lo
         Debug.LogWarning($"Hand Right: {handRight}");
         Debug.LogWarning($"Hand Up: {handUp}");
 
-        // Este es el bueno
+        // Calculate tilt angle and direction
         float upTiltAngle = Vector3.Angle(handUp, Vector3.up);
-        /* Vector3 tiltAxis = Vector3.Cross(Vector3.up, handUp).normalized;
-        float upRollAngle = Vector3.Angle(tiltAxis, Vector3.right);
         
-        // Calculate angles with dot products
-        float dotRollAngle = Mathf.Asin(Vector3.Dot(handRight, Vector3.up)) * Mathf.Rad2Deg;
+        // Determine direction (forward/backward) by checking if hand is tilted forward or backward
+        Vector3 tiltDirection = Vector3.Cross(Vector3.up, handUp).normalized;
+        float forwardness = Vector3.Dot(tiltDirection, handRight); // Positive for forward tilt, negative for backward
         
-        Debug.LogWarning($"Euler Roll Angle: {eulerRollAngle}");
-        Debug.LogWarning($"Up Tilt Angle: {upTiltAngle}");
-        Debug.LogWarning($"Up Roll Angle: {upRollAngle}");
-        Debug.LogWarning($"Dot Roll Angle: {dotRollAngle}");
+        // Store the raw angle for debug
+        m_RollAngle = upTiltAngle * Mathf.Sign(forwardness);
+        Debug.LogWarning($"Up Tilt Angle: {upTiltAngle}, Direction: {(forwardness > 0 ? "Forward" : "Backward")}, Combined: {m_RollAngle}");
         
-        // Use the dot product version for now
-        float rollAngle = dotRollAngle;
-        m_RollAngle = rollAngle;
-        Debug.LogWarning($"Selected Roll Angle: {m_RollAngle}");
-
-        // Use the absolute value to allow twisting in either direction
-        rollAngle = Mathf.Abs(rollAngle);
-
-        // Map the angle from the min/max range to a 0-1 throttle value
-        if (rollAngle < minRotationAngle)
+        // Skip small angles as deadzone
+        if (upTiltAngle < minRotationAngle)
             return 0f;
-
-        return Mathf.Clamp01((rollAngle - minRotationAngle) / (maxRotationAngle - minRotationAngle));*/
-        return Mathf.Clamp01((upTiltAngle - minRotationAngle) / (maxRotationAngle - minRotationAngle));
+            
+        // Calculate throttle magnitude (0 to 1)
+        float throttleMagnitude = Mathf.Clamp01((upTiltAngle - minRotationAngle) / (maxRotationAngle - minRotationAngle));
+        
+        // Return signed throttle value (-1 to 1)
+        return throttleMagnitude * Mathf.Sign(forwardness);
     }
 
     /// <summary>
@@ -155,15 +148,23 @@ public class PatineteProvider : UnityEngine.XR.Interaction.Toolkit.Locomotion.Lo
         var cameraForward = xrOrigin.Camera.transform.forward;
 
         // We want to move along the ground, so we project the camera's forward vector onto the horizontal plane.
-        var forwardDirection = Vector3.ProjectOnPlane(cameraForward, Vector3.up).normalized;
-        if (forwardDirection == Vector3.zero)
+        var directionVector = Vector3.ProjectOnPlane(cameraForward, Vector3.up).normalized;
+        if (directionVector == Vector3.zero)
         {
             // If the camera is looking straight up or down, use the rig's forward direction instead.
-            forwardDirection = Vector3.ProjectOnPlane(xrOriginTransform.forward, Vector3.up).normalized;
+            directionVector = Vector3.ProjectOnPlane(xrOriginTransform.forward, Vector3.up).normalized;
         }
 
-        // Calculate the movement vector for this frame
-        var movement = forwardDirection * (m_CurrentSpeed * Time.deltaTime);
+        // If speed is negative, we need to move in the opposite direction
+        if (m_CurrentSpeed < 0)
+        {
+            directionVector = -directionVector;
+        }
+
+        // Calculate the movement vector for this frame - using absolute speed since direction is handled above
+        var movement = directionVector * (Mathf.Abs(m_CurrentSpeed) * Time.deltaTime);
+        
+        Debug.LogWarning($"Speed: {m_CurrentSpeed}, Movement Vector: {movement}");
 
         TryStartLocomotionImmediately();
         if (locomotionState == LocomotionState.Moving)
