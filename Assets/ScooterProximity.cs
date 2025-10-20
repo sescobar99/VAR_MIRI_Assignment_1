@@ -14,7 +14,9 @@ public class ScooterProximity : MonoBehaviour
         {
             // Oculta el patinete
             scooterRenderer.enabled = false;
-            // CharacterMovement.StartScooterMode();
+            this.gameObject.SetActive(false);
+            Debug.Log("Patinete oculto.");
+            //ScooterMovement.StartScooterMode();
         }
     }
 
@@ -23,8 +25,10 @@ public class ScooterProximity : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            scooterRenderer.enabled = true;
-            // CharacterMovement.StopScooterMode();
+            Debug.Log("Objeto en OnTriggerExit.");
+            //this.gameObject.SetActive(true);
+            //scooterRenderer.enabled = true;
+            //ScooterMovement.StopScooterMode();
         }
     }
 }

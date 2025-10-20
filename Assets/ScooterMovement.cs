@@ -9,10 +9,14 @@ public class ScooterMovementXR : MonoBehaviour
     [Header("Referencias de Input Actions")]
     // Asigna esta acción a la entrada del joystick (eje Y para adelante/atrás)
     public InputActionReference moveAction;
-    // Asigna esta acción a la entrada del joystick (eje X para izquierda/derecha)
-    // NOTA: Si usas una acción de Vector2 para el joystick, solo necesitarás una de estas referencias.
-    public InputActionReference turnAction; 
-    
+    // (opcional) acción única para giro (Vector2 or float X)
+    public InputActionReference turnAction;
+
+    // --- Si usas entradas separadas en cada mano (XRI) ---
+    // Asigna la acción del joystick izquierdo (Vector2) - solo X se usa para giro
+    public InputActionReference leftTurnAction;
+    // Asigna la acción del joystick derecho (Vector2) - solo X se usa para giro
+    public InputActionReference rightTurnAction;
 
     // --- Ajustes de Velocidad ---
     [Header("Ajustes de Movimiento")]
@@ -39,30 +43,18 @@ public class ScooterMovementXR : MonoBehaviour
     }
     private void OnEnable()
     {
-        // Suscribirse a los eventos de las acciones cuando se activa el script
-        if (moveAction != null && moveAction.action != null)
-        {
-            moveAction.action.Enable();
-        }
-
-        // Si usas una sola acción Vector2 para movimiento/giro, solo necesitas esta línea
-        if (turnAction != null && turnAction.action != null)
-        {
-            turnAction.action.Enable();
-        }
+        if (moveAction != null && moveAction.action != null) moveAction.action.Enable();
+        if (turnAction != null && turnAction.action != null) turnAction.action.Enable();
+        if (leftTurnAction != null && leftTurnAction.action != null) leftTurnAction.action.Enable();
+        if (rightTurnAction != null && rightTurnAction.action != null) rightTurnAction.action.Enable();
     }
 
     private void OnDisable()
     {
-        // Desuscribirse cuando se desactiva el script
-        if (moveAction != null && moveAction.action != null)
-        {
-            moveAction.action.Disable();
-        }
-        if (turnAction != null && turnAction.action != null)
-        {
-            turnAction.action.Disable();
-        }
+        if (moveAction != null && moveAction.action != null) moveAction.action.Disable();
+        if (turnAction != null && turnAction.action != null) turnAction.action.Disable();
+        if (leftTurnAction != null && leftTurnAction.action != null) leftTurnAction.action.Disable();
+        if (rightTurnAction != null && rightTurnAction.action != null) rightTurnAction.action.Disable();
     }
 
     // -------------------------------------------------------------------
@@ -70,57 +62,76 @@ public class ScooterMovementXR : MonoBehaviour
     // -------------------------------------------------------------------
     void Update()
     {
-        if (!scooterMode)
-        {
-            return; // Si no estamos en modo patinete, no hacer nada
-        }
-        // 1. Leer el valor del joystick (Vector2)
-        // Usamos TryReadValue para evitar errores si la acción no está asignada
+        if (!scooterMode) return;
+
         if (moveAction != null && moveAction.action != null)
         {
             moveInput = moveAction.action.ReadValue<Vector2>();
-        } 
-        // Si usas dos referencias (una para mover, una para girar), adapta la lectura aquí:
-        // float verticalInput = moveAction.action.ReadValue<float>();
-        // float horizontalInput = turnAction.action.ReadValue<float>();
-        
+        }
+
         float verticalInput = moveInput.y;
-        float horizontalInput = moveInput.x;
 
-        // 2. Actualizar la velocidad actual (aceleración/deceleración)
+        // Read horizontal/turn input: prefer single turnAction if assigned,
+        // otherwise read left/right joystick X and pick a strategy.
+        float horizontalInput = 0f;
+
+        if (turnAction != null && turnAction.action != null)
+        {
+            // If turnAction is Vector2, take x; if it's a float action, ReadValue<float>()
+            var turnVec = turnAction.action.controls.Count > 0 && turnAction.action.controls[0].valueType == typeof(Vector2)
+                ? turnAction.action.ReadValue<Vector2>().x
+                : turnAction.action.ReadValue<float>();
+            horizontalInput = turnVec;
+        }
+        else
+        {
+            float rightX = 0f, leftX = 0f;
+            if (rightTurnAction != null && rightTurnAction.action != null)
+            {
+                rightX = rightTurnAction.action.ReadValue<Vector2>().x;
+            }
+            if (leftTurnAction != null && leftTurnAction.action != null)
+            {
+                leftX = leftTurnAction.action.ReadValue<Vector2>().x;
+            }
+
+            // Strategy options:
+            // 1) Prefer right stick when it has input, otherwise left (used here)
+            if (Mathf.Abs(rightX) > 0.05f) horizontalInput = rightX;
+            else horizontalInput = leftX;
+
+            // 2) Alternative: average both sticks
+            // horizontalInput = (leftX + rightX) * 0.5f;
+
+            // 3) Alternative: sum both sticks (useful if both contribute)
+            // horizontalInput = leftX + rightX;
+        }
+
         UpdateSpeed(verticalInput);
-
-        // 3. Aplicar movimiento hacia adelante/atrás
         ApplyMovement();
-
-        // 4. Aplicar rotación (giro)
         ApplyRotation(horizontalInput);
     }
 
     private void UpdateSpeed(float input)
     {
-        if (Mathf.Abs(input) > 0.1f) // Usa un umbral pequeño para evitar movimientos accidentales
+        if (Mathf.Abs(input) > 0.1f)
         {
-            // Si hay entrada (acelerar), usa el input como dirección y magnitud
             float targetSpeed = input * maxSpeed;
             currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeed, acceleration * Time.deltaTime);
         }
         else
         {
-            // Si no hay entrada (decelerar o frenar)
             currentSpeed = Mathf.MoveTowards(currentSpeed, 0, deceleration * Time.deltaTime);
         }
     }
 
     private void ApplyMovement()
     {
-        // Mueve el objeto a lo largo de su eje Z local
         transform.Translate(Vector3.forward * currentSpeed * Time.deltaTime);
     }
 
     private void ApplyRotation(float horizontalInput)
     {
-        // Gira el objeto alrededor de su eje Y
         float turnRate = horizontalInput * rotationSpeed * Time.deltaTime;
         transform.Rotate(Vector3.up, turnRate);
     }
