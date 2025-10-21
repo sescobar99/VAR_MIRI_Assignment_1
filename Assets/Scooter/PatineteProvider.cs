@@ -53,11 +53,11 @@ public class PatineteProvider : UnityEngine.XR.Interaction.Toolkit.Locomotion.Lo
     {
         // Always read rotation for debugging purposes
         var handRotation = rightHandRotationAction.action.ReadValue<Quaternion>();
-        Debug.LogWarning($"Raw Controller Quaternion: {handRotation.x}, {handRotation.y}, {handRotation.z}, {handRotation.w}");
+        //Debug.LogWarning($"Raw Controller Quaternion: {handRotation.x}, {handRotation.y}, {handRotation.z}, {handRotation.w}");
 
         // Calculate throttle for debugging regardless of locomotion state
         float debugThrottle = CalculateThrottle(handRotation);
-        Debug.LogWarning($"Calculated Throttle: {debugThrottle}");
+        //Debug.LogWarning($"Calculated Throttle: {debugThrottle}");
         
         // if (CanBeginLocomotion())
         // {
@@ -108,9 +108,9 @@ public class PatineteProvider : UnityEngine.XR.Interaction.Toolkit.Locomotion.Lo
         Vector3 handUp = handRotation * Vector3.up;
         
         // Log all vectors for debugging
-        Debug.LogWarning($"Hand Forward: {handForward}");
-        Debug.LogWarning($"Hand Right: {handRight}");
-        Debug.LogWarning($"Hand Up: {handUp}");
+        //Debug.LogWarning($"Hand Forward: {handForward}");
+        //Debug.LogWarning($"Hand Right: {handRight}");
+        //Debug.LogWarning($"Hand Up: {handUp}");
 
         // Calculate tilt angle and direction
         float upTiltAngle = Vector3.Angle(handUp, Vector3.up);
@@ -121,7 +121,7 @@ public class PatineteProvider : UnityEngine.XR.Interaction.Toolkit.Locomotion.Lo
         
         // Store the raw angle for debug
         m_RollAngle = upTiltAngle * Mathf.Sign(forwardness);
-        Debug.LogWarning($"Up Tilt Angle: {upTiltAngle}, Direction: {(forwardness > 0 ? "Forward" : "Backward")}, Combined: {m_RollAngle}");
+        //Debug.LogWarning($"Up Tilt Angle: {upTiltAngle}, Direction: {(forwardness > 0 ? "Forward" : "Backward")}, Combined: {m_RollAngle}");
         
         // Skip small angles as deadzone
         if (upTiltAngle < minRotationAngle)
@@ -164,7 +164,7 @@ public class PatineteProvider : UnityEngine.XR.Interaction.Toolkit.Locomotion.Lo
         // Calculate the movement vector for this frame - using absolute speed since direction is handled above
         var movement = directionVector * (Mathf.Abs(m_CurrentSpeed) * Time.deltaTime);
         
-        Debug.LogWarning($"Speed: {m_CurrentSpeed}, Movement Vector: {movement}");
+        //Debug.LogWarning($"Speed: {m_CurrentSpeed}, Movement Vector: {movement}");
 
         TryStartLocomotionImmediately();
         if (locomotionState == LocomotionState.Moving)
